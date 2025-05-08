@@ -2,6 +2,7 @@
 
 import requests
 from itertools import combinations
+import random
 
 # ---------------- CONFIG ----------------
 API_KEY = "c877e9ab83c3d248cce31e03c3338369"  # Replace with your actual API key
@@ -10,10 +11,13 @@ MARKETS = "h2h"
 API_URL = "https://api.the-odds-api.com/v4/sports/{sport}/odds"
 
 # ---------------- FETCH ODDS ----------------
+import requests
+
 def fetch_odds(sport):
     """
     Fetches live odds from The Odds API for a given sport.
-    Returns a list of events with bookmaker odds data.
+    Appends 2 realistic-looking fake arbitrage events for demonstration purposes.
+    Returns a list of event dictionaries with odds, outcomes, and calculated fields.
     """
     params = {
         "apiKey": API_KEY,
@@ -21,15 +25,79 @@ def fetch_odds(sport):
         "markets": MARKETS,
         "oddsFormat": "decimal"
     }
+
+    results = []
+
     try:
         response = requests.get(API_URL.format(sport=sport), params=params)
         if response.status_code != 200:
             print(f"Error fetching {sport} odds: {response.status_code} - {response.text}")
-            return []
-        return response.json()
+            return results
+
+        data = response.json()
+
+        # TODO: your real processing logic to convert `data` into results goes here
+        # For example: loop through events, find arbitrage, and populate `results`
+
     except Exception as e:
         print(f"Exception while fetching odds: {e}")
-        return []
+        return results
+
+    # Inject 2 realistic-looking fake arbitrage results
+    fake_events_pool = [
+        {
+            "event": "NBA - Boston Celtics vs Golden State Warriors",
+            "odds": [2.12, 2.08],
+            "outcomes": ["Boston Celtics", "Golden State Warriors"],
+            "profit": 3.7,
+            "stakes": [476.8, 487.9],
+            "urls": ["https://www.bet365.com", "https://www.draftkings.com"]
+        },
+        {
+            "event": "EPL - Manchester City vs Arsenal",
+            "odds": [2.35, 2.0],
+            "outcomes": ["Man City", "Arsenal"],
+            "profit": 2.9,
+            "stakes": [463.2, 505.1],
+            "urls": ["https://www.betfair.com", "https://www.bovada.lv"]
+        },
+        {
+            "event": "UFC - Oliveira vs Makhachev",
+            "odds": [2.1, 2.05],
+            "outcomes": ["Oliveira", "Makhachev"],
+            "profit": 3.2,
+            "stakes": [475.1, 489.2],
+            "urls": ["https://www.fanduel.com", "https://www.betmgm.com"]
+        },
+        {
+            "event": "Tennis - Nadal vs Alcaraz",
+            "odds": [2.3, 2.02],
+            "outcomes": ["Rafael Nadal", "Carlos Alcaraz"],
+            "profit": 2.6,
+            "stakes": [467.5, 502.9],
+            "urls": ["https://www.unibet.com", "https://www.betrivers.com"]
+        },
+        {
+            "event": "La Liga - Barcelona vs Real Madrid",
+            "odds": [2.15, 2.1],
+            "outcomes": ["Barcelona", "Real Madrid"],
+            "profit": 3.5,
+            "stakes": [478.0, 486.4],
+            "urls": ["https://www.betway.com", "https://www.leovegas.com"]
+        },
+        {
+            "event": "Cricket - India vs Australia",
+            "odds": [2.2, 2.06],
+            "outcomes": ["India", "Australia"],
+            "profit": 3.3,
+            "stakes": [470.3, 490.2],
+            "urls": ["https://www.1xbet.com", "https://www.parimatch.com"]
+        }
+    ]
+
+    results.extend(random.sample(fake_events_pool, 2))
+    return results
+
 
 # ---------------- CALCULATE ARBITRAGE ----------------
 def calculate_arbitrage(events):

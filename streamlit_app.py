@@ -49,19 +49,37 @@ def display_opportunities(opps):
         st.warning("No sports arbitrage opportunities found.")
         return
 
-    df = pd.DataFrame(opps)
+    data = []
+    for opp in opps:
+        rows = {
+            "Match": opp["event"],
+            "Profit %": opp["profit"],
+            "Stakes": " / ".join(f"{s:.2f}" for s in opp["stakes"]),
+            "Outcomes & Odds": " | ".join(
+                f"{o} @ {odds:.2f} ({bm})"
+                for o, odds, bm in zip(opp["outcomes"], opp["odds"], opp.get("bookmakers", ["Unknown", "Unknown"]))
+            ),
+            "Links": " / ".join(
+                f"[{bm}]({url})" 
+                for bm, url in zip(opp.get("bookmakers", ["Unknown", "Unknown"]), opp["urls"])
+            )
+        }
+        data.append(rows)
+
+    df = pd.DataFrame(data)
     st.success(f"✅ {len(df)} sports arbitrage opportunities found!")
     st.dataframe(df)
 
-    # Visualize Profits
+    # Visualization
     st.subheader("📊 Arbitrage Profit Analysis")
     fig, ax = plt.subplots()
-    ax.bar(df["event"], df["profit"], color='skyblue')
+    ax.bar(df["Match"], df["Profit %"], color='skyblue')
     ax.set_ylabel("Profit %")
     ax.set_xlabel("Events")
     ax.set_title("Arbitrage Profits by Event")
     plt.xticks(rotation=90)
     st.pyplot(fig)
+
 
 # ---------- MAIN DASHBOARD ----------
 if auto_refresh:

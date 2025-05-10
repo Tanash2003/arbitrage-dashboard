@@ -12,15 +12,12 @@ from forex_bot import (
     get_all_currency_symbols
 )
 
-# ---------- CONFIG ----------
 SPORTS = ["basketball_nba", "mma_mixed_martial_arts", "soccer_epl", "cricket_ipl", "tennis_atp_italian_open"]
-EXCHANGES = ["Bet365 Forex", "FXTM"]
-BOOKMARKS = []  # Temporary in-memory store
-SESSION_PROFITS = []  # To track profit trends
+BOOKMARKS = []
+SESSION_PROFITS = []
 
 st.set_page_config(page_title="📈 Arbitrage Dashboard", layout="wide")
 
-# ---------- SIDEBAR CONTROLS ----------
 st.sidebar.header("🎛️ Dashboard Settings")
 if st.sidebar.checkbox("🌙 Enable Dark Mode"):
     st.markdown("""<style>body { background-color: #111; color: #eee; }</style>""", unsafe_allow_html=True)
@@ -41,7 +38,6 @@ min_forex_profit = st.sidebar.slider("💹 Min Forex Arbitrage %", 0.0, 5.0, 0.1
 max_pairs = st.sidebar.slider("🔢 Max Currency Pairs to Scan", 50, 1000, 300, 50)
 batch_delay = st.sidebar.slider("⏱️ Delay Between Requests (sec)", 0.0, 1.0, 0.1, 0.05)
 
-# ---------- SPORTS ARBITRAGE ----------
 def display_opportunities(opps):
     if not opps:
         st.warning("No sports arbitrage opportunities found.")
@@ -60,18 +56,24 @@ def display_opportunities(opps):
             ),
             "Links": " / ".join(
                 f"[{bm}]({url})" for bm, url in zip(opp.get("bookmakers", ["Unknown"] * 2), opp["urls"])
-            ),
-            "Bookmark": "⭐ Add"
+            )
         }
         data.append(rows)
 
     df = pd.DataFrame(data)
     st.success(f"✅ {len(df)} sports arbitrage opportunities found!")
-    st.dataframe(df)
-
     for idx, row in df.iterrows():
-        if st.button(f"⭐ Bookmark", key=f"bookmark_{idx}"):
-            BOOKMARKS.append(row)
+        with st.container():
+            st.markdown(f"""<div style='padding:10px; border:1px solid #ccc; border-radius:10px; margin-bottom:10px;'>
+                <strong>🏟️ {row['Match']}</strong><br>
+                📈 <strong>Profit %:</strong> {row['Profit %']}%<br>
+                💰 <strong>Stakes:</strong> {row['Stakes']}<br>
+                🎯 <strong>Outcomes & Odds:</strong> {row['Outcomes & Odds']}<br>
+                🔗 <strong>Links:</strong> {row['Links']}<br>
+            </div>""", unsafe_allow_html=True)
+            if st.button("⭐ Bookmark", key=f"bookmark_{idx}"):
+                if row not in BOOKMARKS:
+                    BOOKMARKS.append(row)
 
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Download Sports Data as CSV", csv, "sports_arbitrage.csv", "text/csv")
@@ -85,7 +87,6 @@ def display_opportunities(opps):
     plt.xticks(rotation=90)
     st.pyplot(fig)
 
-    # Pie Chart for Stake Distribution
     st.subheader("🥧 Stake Distribution")
     fig_pie, ax_pie = plt.subplots()
     stakes_values = [float(s.split("/")[0]) for s in df["Stakes"]]
@@ -93,10 +94,7 @@ def display_opportunities(opps):
     ax_pie.axis('equal')
     st.pyplot(fig_pie)
 
-    # Track profit trend
     SESSION_PROFITS.append(total_profit)
-
-    # Profit Trend Chart
     st.subheader("📈 Profit Trend During Session")
     fig_trend, ax_trend = plt.subplots()
     ax_trend.plot(SESSION_PROFITS, marker='o', linestyle='-', color='green')
@@ -105,7 +103,6 @@ def display_opportunities(opps):
     ax_trend.set_title("Session Profit Trend")
     st.pyplot(fig_trend)
 
-# ---------- MAIN DASHBOARD ----------
 st.title("🏆 Sports & Forex Arbitrage Finder")
 st.markdown("Detect real-time **sports odds** and **currency arbitrage** opportunities for risk-free profits!")
 
@@ -130,7 +127,6 @@ if manual_refresh or auto_refresh:
 
     display_opportunities(all_opportunities)
 
-# ---------- FOREX ARBITRAGE ----------
 st.markdown("---")
 st.subheader("💱 Forex Arbitrage Opportunities")
 
@@ -157,7 +153,6 @@ if st.button("🔄 Run Forex Arbitrage Scan"):
         plt.xticks(rotation=90)
         st.pyplot(fig2)
 
-# ---------- BOOKMARKED OPPORTUNITIES ----------
 if BOOKMARKS:
     st.markdown("---")
     st.subheader("⭐ Bookmarked Opportunities")
@@ -165,3 +160,4 @@ if BOOKMARKS:
     st.dataframe(df_bookmarks)
     csv_bookmarks = df_bookmarks.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Download Bookmarked Data", csv_bookmarks, "bookmarked_opportunities.csv", "text/csv")
+

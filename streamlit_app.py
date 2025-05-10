@@ -21,26 +21,28 @@ SPORTS = [
     "basketball_euroleague",
     "mma_mixed_martial_arts",
     "soccer_epl",
-    "soccer_uefa_champs_league",
-    "soccer_spain_la_liga",
-    "soccer_germany_bundesliga",
-    "soccer_italy_serie_a",
-    "baseball_mlb",
-    "americanfootball_nfl",
-    "tennis_atp_italian_open",
-    "cricket_ipl",
-    "icehockey_nhl"
-]
+    "soccer_uimport streamlit as st
+import time
+from datetime import datetime
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from arb_bot import fetch_odds, calculate_arbitrage, inject_fake_events
+from forex_bot import fetch_forex_batch, detect_forex_arbitrage, get_all_currency_symbols
+
+from itertools import permutations
+
+# ---------- CONFIG ----------
+SPORTS = ["basketball_nba", "mma_mixed_martial_arts", "soccer_epl", "cricket_ipl", "tennis_atp_italian_open"]
 REFRESH_INTERVAL = 60
 
 st.set_page_config(page_title="Live Arbitrage Dashboard", layout="wide")
 
 # ---------- TITLE ----------
 st.title("🏆 Sports & Forex Arbitrage Finder")
-st.markdown("Scan real-time **sports odds** and **currency rates** to detect high-confidence arbitrage opportunities. Supports multi-way odds and global currency scans.")
-st.divider()
+st.markdown("Scan real-time **sports odds** and **currency rates** to detect arbitrage opportunities.")
 
-# ---------- SIDEBAR CONTROLS ----------
+# ---------- SIDEBAR ----------
 st.sidebar.header("⚙️ Sports Arbitrage Settings")
 manual_refresh = st.sidebar.button("🔄 Refresh Now")
 auto_refresh = st.sidebar.checkbox("⏱️ Auto-refresh every 60s", value=False)
@@ -50,7 +52,7 @@ selected_sport = st.sidebar.selectbox("🎮 Select Sport", ["All"] + SPORTS)
 st.sidebar.markdown("---")
 st.sidebar.header("💱 Forex Arbitrage Settings")
 all_currencies = get_all_currency_symbols()
-global_mode = st.sidebar.checkbox("🌍 Global Currency Scan (All 170+)", value=False)
+global_mode = st.sidebar.checkbox("🌍 Global Currency Scan", value=False)
 
 selected_currencies = st.sidebar.multiselect(
     "Select Currencies (ignored if global scan enabled)",
@@ -99,9 +101,10 @@ def run_analysis():
             opps = calculate_arbitrage(events)
             all_opps.extend(opps)
 
-    filtered_opps = [
-        o for o in all_opps if o["profit"] >= min_sports_profit
-    ]
+    # Inject fake events for demo purposes
+    all_opps.extend(inject_fake_events())
+
+    filtered_opps = [o for o in all_opps if o["profit"] >= min_sports_profit]
     st.caption(f"⏱️ Last checked: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Events scanned: {total_events}")
     return filtered_opps
 
@@ -127,13 +130,11 @@ tab1, tab2, tab3 = st.tabs([
     "💱 Forex Arbitrage"
 ])
 
-# ---------- TAB 1: SPORTS TABLE ----------
 with tab1:
     st.header("🎯 Sports Arbitrage Table")
     if not df.empty:
         st.dataframe(df, use_container_width=True)
 
-# ---------- TAB 2: SPORTS CHART & EXPORT ----------
 with tab2:
     if not df.empty:
         st.markdown("### 📈 Arbitrage Profit % Distribution")
@@ -154,10 +155,8 @@ with tab2:
             mime='text/csv'
         )
 
-# ---------- TAB 3: FOREX ARBITRAGE ----------
 with tab3:
     st.header("💱 Forex Arbitrage Opportunities")
-
     with st.spinner("Scanning forex rates..."):
         if global_mode:
             currency_pairs = list(permutations(all_currencies, 2))[:max_pairs]
@@ -181,3 +180,4 @@ with tab3:
             file_name=f"forex_arbitrage_{datetime.now().strftime('%H%M%S')}.csv",
             mime='text/csv'
         )
+

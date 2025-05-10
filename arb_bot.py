@@ -101,27 +101,47 @@ def calculate_arbitrage(events, min_profit_threshold=0.5):
 
     return arbitrage_opportunities
 
-def inject_fake_events(num_events=5):
+def inject_fake_events(num_events=3):
     """
-    Injects random fake arbitrage events for demonstration purposes.
+    Generates realistic-looking fake arbitrage events for demonstration purposes.
+    Rotates events dynamically to simulate live data with realistic profit margins and bookmaker names.
     """
+    sample_events = [
+        ("Lakers", "Celtics"),
+        ("Arsenal", "Manchester City"),
+        ("Oscar Piastri", "Lando Norris"),
+        ("Djokovic", "Alcaraz"),
+        ("Red Bull", "Ferrari"),
+        ("Real Madrid", "Barcelona"),
+        ("Golden State Warriors", "Miami Heat"),
+        ("Liverpool", "Chelsea"),
+        ("Oklahoma Athletics", "Boston Red Sox"),
+        ("Nadal", "Medvedev")
+    ]
+
     fake_events = []
-    for i in range(num_events):
-        odds = [round(random.uniform(1.5, 3.5), 2) for _ in range(2)]
+    selected_matches = random.sample(sample_events, num_events)
+
+    for team_a, team_b in selected_matches:
+        odds = [round(random.uniform(1.5, 3.5), 2), round(random.uniform(1.5, 3.5), 2)]
         implied_sum = sum(1 / odd for odd in odds)
 
         if implied_sum < 1:
-            profit_percent = round((1 - implied_sum) * 100, 2)
+            profit_percent = round(random.uniform(2.0, 15.0), 2)  # Realistic profit margin
             capital = 1000
             stakes = [round((capital / odd) / implied_sum, 2) for odd in odds]
-            outcomes = ["Team A", "Team B"]
+
+            bookmakers = random.sample(['Bet365', 'William Hill', 'DraftKings', 'Betway', 'Bwin'], 2)
+            urls = [f"https://{bk.lower().replace(' ', '')}.com" for bk in bookmakers]
+
             fake_events.append({
-                "event": f"Fake Event {i+1}",
+                "event": f"{team_a} vs {team_b}",
                 "odds": odds,
-                "outcomes": outcomes,
+                "outcomes": [team_a, team_b],
                 "profit": profit_percent,
                 "stakes": stakes,
-                "urls": ["https://fakebookie1.com", "https://fakebookie2.com"]
+                "urls": urls,
+                "bookmakers": bookmakers
             })
 
     return fake_events

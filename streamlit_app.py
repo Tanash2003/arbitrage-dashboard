@@ -16,12 +16,8 @@ from forex_bot import (
 from itertools import permutations
 
 # ---------- CONFIG ----------
-SPORTS = [
-    "basketball_nba",
-    "basketball_euroleague",
-    "mma_mixed_martial_arts",
-    "soccer_epl",
-    "soccer_uimport streamlit as st
+SPORTS = ["basketball_nba", "mma_mixed_martial_arts", "soccer_epl", "cricket_ipl", "tennis_atp_italian_open"]
+
 import time
 from datetime import datetime
 import pandas as pd

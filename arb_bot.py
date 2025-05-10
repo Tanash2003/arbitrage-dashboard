@@ -1,26 +1,27 @@
 import requests
 import random
+import os
 
-API_KEY = "c9d909ac36dc48112ff780556fd076fa"  # Replace with your real API Key
-API_URL = "https://api.the-odds-api.com/v4/sports/{sport}/odds/"
-REGIONS = "us,uk,in"  # Example: US, UK, India regions
-MARKETS = "h2h"  # Head-to-head market for two-outcome events
-
+# API Configuration
+API_KEY = os.getenv("dcf4fc271ce80bf8fc89009d33d8aef4")  # Store API Key securely
+API_URL = "https://api.sportsgameodds.com/v1/odds"  # Example URL, confirm with documentation
+REGION = "us"  # Adjust based on your market focus
+MARKET = "moneyline"  # Assuming 2-way markets; change if needed
 
 def fetch_odds(sport):
     """
-    Fetches live odds from The Odds API for a given sport.
+    Fetches live odds from Sports Game Odds API for a given sport.
     Returns raw event data as JSON.
     """
     params = {
         "apiKey": API_KEY,
-        "regions": REGIONS,
-        "markets": MARKETS,
-        "oddsFormat": "decimal"
+        "sport": sport,  # Example: 'basketball_nba', 'soccer_epl'
+        "region": REGION,
+        "market": MARKET
     }
 
     try:
-        response = requests.get(API_URL.format(sport=sport), params=params)
+        response = requests.get(API_URL, params=params)
         if response.status_code != 200:
             print(f"Error fetching {sport} odds: {response.status_code} - {response.text}")
             return []
@@ -29,11 +30,10 @@ def fetch_odds(sport):
         print(f"Exception while fetching odds: {e}")
         return []
 
-
-def calculate_arbitrage(events):
+def calculate_arbitrage(events, min_profit_threshold=0.5):
     """
-    Processes raw event data to calculate arbitrage opportunities.
-    Returns a list of dictionaries with event, profit %, stakes, and outcome details.
+    Calculates arbitrage opportunities from event data.
+    Returns a list of dictionaries with event, profit %, stakes, outcomes, and bookmaker URLs.
     """
     arbitrage_opportunities = []
 
@@ -47,17 +47,17 @@ def calculate_arbitrage(events):
 
             odds_data = []
             for bookmaker in bookmakers:
-                market = next((m for m in bookmaker["markets"] if m["key"] == "h2h"), None)
-                if market and len(market["outcomes"]) >= 2:
-                    prices = [outcome["price"] for outcome in market["outcomes"][:2]]
+                markets = bookmaker.get("markets", [])
+                market = next((m for m in markets if m.get("key") == MARKET), None)
+                if market and len(market.get("outcomes", [])) >= 2:
+                    prices = [float(outcome["price"]) for outcome in market["outcomes"][:2]]
                     odds_data.append({
                         "bookmaker": bookmaker["title"],
-                        "url": bookmaker["url"],
+                        "url": bookmaker.get("url", ""),
                         "odds": prices,
-                        "outcomes": [o["name"] for o in market["outcomes"][:2]]
+                        "outcomes": [outcome["name"] for outcome in market["outcomes"][:2]]
                     })
 
-            # Simple 2-way arbitrage check
             if len(odds_data) < 2:
                 continue
 
@@ -79,77 +79,53 @@ def calculate_arbitrage(events):
 
             if implied_sum < 1:
                 profit_percent = (1 - implied_sum) * 100
-                capital = 1000  # Fixed test capital
-                stakes = [
-                    round((capital / best_odds[0]) / implied_sum, 2),
-                    round((capital / best_odds[1]) / implied_sum, 2)
-                ]
+                if profit_percent >= min_profit_threshold:
+                    capital = 1000  # Base capital for stake calculations
+                    stakes = [
+                        round((capital / best_odds[0]) / implied_sum, 2),
+                        round((capital / best_odds[1]) / implied_sum, 2)
+                    ]
 
-                arbitrage_opportunities.append({
-                    "event": event.get("event", "Unknown Event"),
-                    "odds": best_odds,
-                    "outcomes": best_outcomes,
-                    "profit": round(profit_percent, 2),
-                    "stakes": stakes,
-                    "urls": best_urls
-                })
+                    arbitrage_opportunities.append({
+                        "event": event.get("name", "Unknown Event"),
+                        "odds": best_odds,
+                        "outcomes": best_outcomes,
+                        "profit": round(profit_percent, 2),
+                        "stakes": stakes,
+                        "urls": best_urls
+                    })
 
         except Exception as e:
             print(f"Error processing event: {e}")
+            continue
 
     return arbitrage_opportunities
 
-
-def inject_fake_events():
+def inject_fake_events(num_events=5):
     """
-    Returns two fake arbitrage events processed through calculate_arbitrage().
+    Injects random fake arbitrage events for demonstration purposes.
     """
-    fake_events = [
-        {
-            "teams": ["Boston Celtics", "Golden State Warriors"],
-            "bookmakers": [{
-                "title": "bet365",
-                "url": "https://www.bet365.com",
-                "markets": [{
-                    "key": "h2h",
-                    "outcomes": [
-                        {"name": "Boston Celtics", "price": 2.12},
-                        {"name": "Golden State Warriors", "price": 2.08}
-                    ]
-                }]
-            }]
-        },
-        {
-            "teams": ["India", "Australia"],
-            "bookmakers": [{
-                "title": "1xBet",
-                "url": "https://www.1xbet.com",
-                "markets": [{
-                    "key": "h2h",
-                    "outcomes": [
-                        {"name": "India", "price": 2.20},
-                        {"name": "Australia", "price": 2.06}
-                    ]
-                }]
-            }]
-        },
-        {
-            "teams": ["Barcelona", "Real Madrid"],
-            "bookmakers": [{
-                "title": "Betway",
-                "url": "https://www.betway.com",
-                "markets": [{
-                    "key": "h2h",
-                    "outcomes": [
-                        {"name": "Barcelona", "price": 2.15},
-                        {"name": "Real Madrid", "price": 2.10}
-                    ]
-                }]
-            }]
-        }
-    ]
+    fake_events = []
+    for i in range(num_events):
+        odds = [round(random.uniform(1.5, 3.5), 2) for _ in range(2)]
+        implied_sum = sum(1 / odd for odd in odds)
 
-    return calculate_arbitrage(random.sample(fake_events, 2))
+        if implied_sum < 1:
+            profit_percent = round((1 - implied_sum) * 100, 2)
+            capital = 1000
+            stakes = [round((capital / odd) / implied_sum, 2) for odd in odds]
+            outcomes = ["Team A", "Team B"]
+            fake_events.append({
+                "event": f"Fake Event {i+1}",
+                "odds": odds,
+                "outcomes": outcomes,
+                "profit": profit_percent,
+                "stakes": stakes,
+                "urls": ["https://fakebookie1.com", "https://fakebookie2.com"]
+            })
+
+    return fake_events
+
 
 
 #c9d909ac36dc48112ff780556fd076fa

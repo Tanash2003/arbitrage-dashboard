@@ -70,7 +70,7 @@ def display_opportunities(opps):
     st.dataframe(df)
 
     for idx, row in df.iterrows():
-        if st.button(f"⭐ Bookmark {row['Match']}"):
+        if st.button(f"⭐ Bookmark", key=f"bookmark_{idx}"):
             BOOKMARKS.append(row)
 
     csv = df.to_csv(index=False).encode('utf-8')
